@@ -1,244 +1,548 @@
-<!DOCTYPE html>
+/****************************************************
 
-<html lang="es">
+* KANBAN LMS
+* Frontend para GitHub Pages
+  ****************************************************/
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+const API_URL =
+"https://script.google.com/macros/s/AKfycbxk0qR0oyWG1-9Ho5AJiXsT7pbH2KJWIVgUdfcnVQtUUsfKMh5TuW9C5_R-6uEjxj6WGQ/exec";
 
-  <title>Kanban LMS</title>
+const STATES = [
+"Backlog",
+"Asignado a",
+"En progreso",
+"En revisión",
+"Finalizado"
+];
 
-  <script src="https://cdn.tailwindcss.com"></script>
+let cards = [];
+let draggedCardId = null;
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+/* ==================================================
+INICIAR CUANDO LA PÁGINA YA CARGÓ
+================================================== */
 
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  >
+document.addEventListener("DOMContentLoaded", () => {
 
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-    }
+setupForm();
 
-    .dragging {
-      opacity: 0.45;
-      transform: rotate(2deg);
-    }
+setupModal();
 
-    .drop-zone {
-      background-color: rgba(59, 130, 246, 0.08);
-      border: 2px dashed rgba(59, 130, 246, 0.35);
-    }
+loadBoard();
 
-    .kanban-column {
-      min-height: 520px;
-    }
+});
 
-    .line-clamp-3 {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-  </style>
+/* ==================================================
+CARGAR TABLERO
+================================================== */
 
-</head>
+function loadBoard() {
 
-<body class="bg-slate-100 min-h-screen text-slate-800">
+showLoading(true);
 
-  <!-- HEADER -->
+jsonp({
+action: "getCards"
+})
 
-  <header class="bg-white border-b border-slate-200">
+.then(response => {
 
 ```
-<div
-  class="max-w-[1800px] mx-auto px-5 md:px-8 py-5
-         flex flex-col md:flex-row
-         md:items-center md:justify-between gap-4"
->
+if (!response.success) {
+  showError(
+    response.message ||
+    "No se pudieron cargar las tareas."
+  );
+  return;
+}
 
-  <div>
-    <h1 class="text-2xl md:text-3xl font-bold">
-      Kanban LMS
-    </h1>
+cards = response.cards || [];
 
-    <p class="text-sm text-slate-500 mt-1">
-      Organización y seguimiento del proyecto
-    </p>
+renderBoard();
+```
+
+})
+
+.catch(error => {
+
+```
+console.error("Error:", error);
+
+showError(
+  "No fue posible conectar con Google Sheets."
+);
+```
+
+})
+
+.finally(() => {
+
+```
+showLoading(false);
+```
+
+});
+
+}
+
+/* ==================================================
+RENDERIZAR TABLERO
+================================================== */
+
+function renderBoard() {
+
+const board =
+document.getElementById("board");
+
+if (!board) {
+console.error("No existe #board");
+return;
+}
+
+board.innerHTML = "";
+
+STATES.forEach(state => {
+
+```
+const stateCards =
+  cards.filter(
+    card => card.estado === state
+  );
+
+const column =
+  document.createElement("section");
+
+column.className =
+  "kanban-column bg-slate-200/70 " +
+  "rounded-2xl p-3 transition";
+
+column.dataset.state = state;
+
+column.addEventListener(
+  "dragover",
+  handleDragOver
+);
+
+column.addEventListener(
+  "dragleave",
+  handleDragLeave
+);
+
+column.addEventListener(
+  "drop",
+  event => handleDrop(event, state)
+);
+
+column.innerHTML = `
+
+  <div class="flex items-center justify-between mb-3 px-1">
+
+    <h2 class="font-semibold text-slate-700 text-sm">
+      ${escapeHTML(state)}
+    </h2>
+
+    <span
+      class="bg-white text-slate-500
+             rounded-full px-2.5 py-1
+             text-xs font-semibold shadow-sm"
+    >
+      ${stateCards.length}
+    </span>
+
   </div>
 
-  <button
-    onclick="openCreateModal()"
-    class="bg-slate-900 hover:bg-slate-700
-           text-white px-5 py-2.5 rounded-xl
-           font-medium transition shadow-sm"
+  <div
+    class="space-y-3 min-h-[100px]"
+    id="column-${slugify(state)}"
+  ></div>
+
+`;
+
+board.appendChild(column);
+
+const container =
+  column.querySelector(
+    `#column-${slugify(state)}`
+  );
+
+stateCards.forEach(card => {
+
+  container.appendChild(
+    createCardElement(card)
+  );
+
+});
+```
+
+});
+
+}
+
+/* ==================================================
+CREAR TARJETA VISUAL
+================================================== */
+
+function createCardElement(card) {
+
+const article =
+document.createElement("article");
+
+article.draggable = true;
+
+article.dataset.id = card.id;
+
+article.className =
+"bg-white rounded-xl p-4 shadow-sm " +
+"border border-slate-200 " +
+"cursor-grab hover:shadow-md transition";
+
+article.addEventListener(
+"dragstart",
+handleDragStart
+);
+
+article.addEventListener(
+"dragend",
+handleDragEnd
+);
+
+const responsible =
+card.responsable || "Sin asignar";
+
+article.innerHTML = `
+
+```
+<div class="flex items-start justify-between gap-2">
+
+  <h3
+    class="font-semibold text-slate-800
+           leading-snug flex-1"
   >
-    + Nueva tarea
+    ${escapeHTML(card.titulo)}
+  </h3>
+
+  <button
+    type="button"
+    class="edit-button text-slate-400
+           hover:text-slate-800 text-lg
+           flex-shrink-0"
+    title="Editar tarea"
+  >
+    ✎
   </button>
 
 </div>
-```
 
-  </header>
-
-  <!-- TABLERO -->
-
-  <main class="max-w-[1800px] mx-auto px-4 md:px-8 py-6">
-
-```
-<div
-  id="loading"
-  class="text-center text-slate-500 py-10"
+<p
+  class="text-sm text-slate-500
+         mt-2 line-clamp-3"
 >
-  Cargando tareas...
-</div>
+  ${escapeHTML(
+    card.descripcion || "Sin descripción"
+  )}
+</p>
 
-<div
-  id="board"
-  class="hidden grid grid-cols-1 md:grid-cols-2
-         xl:grid-cols-5 gap-4"
->
-</div>
-```
-
-  </main>
-
-  <!-- MODAL -->
+<div class="mt-4 space-y-2">
 
   <div
-    id="modal"
-    class="hidden fixed inset-0 bg-black/40
-           z-50 items-center justify-center p-4"
+    class="flex items-center gap-2
+           text-xs text-slate-500"
   >
-
-```
-<div
-  class="bg-white rounded-2xl shadow-2xl
-         w-full max-w-lg max-h-[90vh]
-         overflow-y-auto p-6"
->
-
-  <div class="flex items-center justify-between mb-5">
-
-    <div>
-      <h2
-        id="modalTitle"
-        class="text-xl font-bold"
-      >
-        Nueva tarea
-      </h2>
-
-      <p class="text-xs text-slate-500 mt-1">
-        Completa la información de la actividad
-      </p>
-    </div>
-
-    <button
-      onclick="closeModal()"
-      class="text-slate-400 hover:text-slate-800
-             text-2xl leading-none"
-    >
-      ×
-    </button>
-
+    <span>👤</span>
+    <span>
+      ${escapeHTML(responsible)}
+    </span>
   </div>
 
+  <div
+    class="flex items-center gap-2
+           text-xs text-slate-500"
+  >
+    <span>📅</span>
+    <span>
+      ${formatTimeline(card)}
+    </span>
+  </div>
 
-  <form id="taskForm" class="space-y-4">
+  ${
+    card.url
+      ? `
+        <a
+          href="${escapeAttribute(card.url)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1
+                 text-xs text-blue-600
+                 hover:underline truncate"
+        >
+          🔗 Ver entregable
+        </a>
+      `
+      : ""
+  }
 
-    <input
-      type="hidden"
-      id="taskId"
-    >
-
-
-    <!-- TÍTULO -->
-    <div>
-
-      <label class="text-sm font-medium">
-        Nombre / Título
-      </label>
-
-      <input
-        id="titulo"
-        required
-        placeholder="Ej. Diseñar página principal"
-        class="mt-1 w-full border border-slate-300
-               rounded-xl px-3 py-2.5
-               outline-none focus:ring-2
-               focus:ring-slate-300"
-      >
-
-    </div>
-
-
-    <!-- DESCRIPCIÓN -->
-    <div>
-
-      <label class="text-sm font-medium">
-        Descripción
-      </label>
-
-      <textarea
-        id="descripcion"
-        rows="4"
-        placeholder="Describe la actividad..."
-        class="mt-1 w-full border border-slate-300
-               rounded-xl px-3 py-2.5
-               outline-none focus:ring-2
-               focus:ring-slate-300"
-      ></textarea>
-
-    </div>
-
-
-    <!-- RESPONSABLE -->
-    <div>
-
-      <label class="text-sm font-medium">
-        Responsable
-      </label>
-
-      <select
-        id="responsable"
-        class="mt-1 w-full border border-slate-300
-               rounded-xl px-3 py-2.5"
-      >
-
-        <option value="">
-          Sin asignar
-        </option>
-
-        <option value="Valentina">
-          Valentina
-        </option>
-
-        <option value="Daniel">
-          Daniel
-        </option>
-
-        <option value="Isabella">
-          Isabella
-        </option>
-
-        <option value="Breiner">
-          Breiner
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <!-- FECHAS -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-      <div>
-
-        <label class="text-sm font-medium">
-          Fecha de inicio
-        </label
+</div>
 ```
+
+`;
+
+const editButton =
+article.querySelector(".edit-button");
+
+editButton.addEventListener(
+"click",
+() => editCard(card.id)
+);
+
+return article;
+}
+
+/* ==================================================
+DRAG & DROP
+================================================== */
+
+function handleDragStart(event) {
+
+draggedCardId =
+event.currentTarget.dataset.id;
+
+event.currentTarget.classList.add(
+"dragging"
+);
+
+event.dataTransfer.effectAllowed =
+"move";
+
+event.dataTransfer.setData(
+"text/plain",
+draggedCardId
+);
+}
+
+function handleDragEnd(event) {
+
+event.currentTarget.classList.remove(
+"dragging"
+);
+
+draggedCardId = null;
+
+document
+.querySelectorAll(".drop-zone")
+.forEach(element => {
+
+```
+  element.classList.remove(
+    "drop-zone"
+  );
+
+});
+```
+
+}
+
+function handleDragOver(event) {
+
+event.preventDefault();
+
+event.currentTarget.classList.add(
+"drop-zone"
+);
+}
+
+function handleDragLeave(event) {
+
+event.currentTarget.classList.remove(
+"drop-zone"
+);
+}
+
+function handleDrop(event, newState) {
+
+event.preventDefault();
+
+event.currentTarget.classList.remove(
+"drop-zone"
+);
+
+const id =
+event.dataTransfer.getData(
+"text/plain"
+);
+
+const card =
+cards.find(
+card => String(card.id) === String(id)
+);
+
+if (!card) return;
+
+const previousState =
+card.estado;
+
+if (previousState === newState) {
+return;
+}
+
+card.estado = newState;
+
+renderBoard();
+
+jsonp({
+action: "updateCard",
+id: card.id,
+estado: newState
+})
+
+.then(response => {
+
+```
+if (!response.success) {
+
+  card.estado =
+    previousState;
+
+  renderBoard();
+
+  showError(
+    response.message ||
+    "No se pudo actualizar la tarea."
+  );
+
+  return;
+}
+
+showSuccess(
+  `Tarea movida a "${newState}".`
+);
+```
+
+})
+
+.catch(error => {
+
+```
+console.error(error);
+
+card.estado =
+  previousState;
+
+renderBoard();
+
+showError(
+  "No se pudo actualizar la tarea."
+);
+```
+
+});
+
+}
+
+/* ==================================================
+NUEVA TAREA
+================================================== */
+
+function openCreateModal() {
+
+const form =
+document.getElementById("taskForm");
+
+const modalTitle =
+document.getElementById("modalTitle");
+
+const taskId =
+document.getElementById("taskId");
+
+const estado =
+document.getElementById("estado");
+
+if (!form || !modalTitle || !taskId || !estado) {
+
+```
+console.error(
+  "No se encontraron los elementos del formulario."
+);
+
+return;
+```
+
+}
+
+modalTitle.textContent =
+"Nueva tarea";
+
+form.reset();
+
+taskId.value = "";
+
+estado.value =
+"Backlog";
+
+openModal();
+}
+
+/* ==================================================
+EDITAR TAREA
+================================================== */
+
+function editCard(id) {
+
+const card =
+cards.find(
+card => String(card.id) === String(id)
+);
+
+if (!card) {
+showError("No se encontró la tarea.");
+return;
+}
+
+document
+.getElementById("modalTitle")
+.textContent = "Editar tarea";
+
+document
+.getElementById("taskId")
+.value = card.id;
+
+document
+.getElementById("titulo")
+.value = card.titulo || "";
+
+document
+.getElementById("descripcion")
+.value = card.descripcion || "";
+
+document
+.getElementById("responsable")
+.value = card.responsable || "";
+
+document
+.getElementById("fechaInicio")
+.value = card.fechaInicio || "";
+
+document
+.getElementById("fechaFin")
+.value = card.fechaFin || "";
+
+document
+.getElementById("url")
+.value = card.url || "";
+
+document
+.getElementById("estado")
+.value = card.estado || "Backlog";
+
+openModal();
+}
+
+/* ==================================================
+FORMULARIO
+================================================== */
+
+function setupForm() {
+
+const form =
+document.getElementById("taskForm");
+
+if (!form) {
+console.error(
