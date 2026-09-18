@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Kanban LMS</title>
+
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+
+  <!-- Fuente -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+
+  <style>
+
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .dragging {
+      opacity: 0.5;
+      transform: rotate(2deg);
+    }
+
+    .drop-zone {
+      background-color: rgba(59, 130, 246, 0.08);
+    }
+
+  </style>
+
+</head>
+
+
+<body class="bg-slate-100 min-h-screen">
+
+
+  <!-- HEADER -->
+
+  <header class="bg-white border-b">
+
+    <div
+      class="max-w-[1800px] mx-auto px-6 py-5
+             flex flex-col md:flex-row
+             md:items-center md:justify-between gap-4"
+    >
+
+      <div>
+
+        <h1 class="text-2xl font-bold text-slate-800">
+          Kanban LMS
+        </h1>
+
+        <p class="text-sm text-slate-500">
+          Gestión del proyecto de aprendizaje con IA
+        </p>
+
+      </div>
+
+
+      <button
+        onclick="openCreateModal()"
+        class="bg-slate-900 hover:bg-slate-700
+               text-white px-5 py-2.5 rounded-xl
+               font-medium transition"
+      >
+
+        + Nueva tarea
+
+      </button>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- MAIN -->
+
+  <main
+    class="max-w-[1800px] mx-auto px-4 md:px-6 py-6"
+  >
+
+    <div
+      id="board"
+      class="grid grid-cols-1 md:grid-cols-2
+             xl:grid-cols-5 gap-4"
+    >
+    </div>
+
+  </main>
+
+
+
+  <!-- MODAL -->
+
+  <div
+    id="modal"
+    class="hidden fixed inset-0
+           bg-black/40 z-50
+           items-center justify-center p-4"
+  >
+
+    <div
+      class="bg-white rounded-2xl shadow-xl
+             w-full max-w-lg p-6"
+    >
+
+      <div class="flex justify-between items-center mb-5">
+
+        <h2
+          id="modalTitle"
+          class="text-xl font-bold text-slate-800"
+        >
+          Nueva tarea
+        </h2>
+
+        <button
+          onclick="closeModal()"
+          class="text-slate-400 hover:text-slate-800 text-xl"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <form id="taskForm" class="space-y-4">
+
+        <input
+          type="hidden"
+          id="taskId"
+        >
+
+
+        <div>
+
+          <label class="text-sm font-medium">
+            Título
+          </label>
+
+          <input
+            id="titulo"
+            required
+            class="mt-1 w-full border rounded-xl
+                   px-3 py-2 outline-none
+                   focus:ring-2 focus:ring-slate-300"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label class="text-sm font-medium">
+            Descripción
+          </label>
+
+          <textarea
+            id="descripcion"
+            rows="4"
+            class="mt-1 w-full border rounded-xl
+                   px-3 py-2 outline-none
+                   focus:ring-2 focus:ring-slate-300"
+          ></textarea>
+
+        </div>
+
+
+        <div>
+
+          <label class="text-sm font-medium">
+            Responsable
+          </label>
+
+          <select
+            id="responsable"
+            class="mt-1 w-full border rounded-xl px-3 py-2"
+          >
+
+            <option value="">
+              Sin asignar
+            </option>
+
+            <option>
+              Valentina
+            </option>
+
+            <option>
+              Daniel
+            </option>
+
+            <option>
+              Isabella
+            </option>
+
+            <option>
+              Breiner
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="grid grid-cols-2 gap-3">
+
+          <div>
+
+            <label class="text-sm font-medium">
+              Fecha inicio
+            </label>
+
+            <input
+              type="date"
+              id="fechaInicio"
+              class="mt-1 w-full border rounded-xl px-3 py-2"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label class="text-sm font-medium">
+              Fecha final
+            </label>
+
+            <input
+              type="date"
+              id="fechaFin"
+              class="mt-1 w-full border rounded-xl px-3 py-2"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <label class="text-sm font-medium">
+            URL del entregable
+          </label>
+
+          <input
+            type="url"
+            id="url"
+            placeholder="https://..."
+            class="mt-1 w-full border rounded-xl px-3 py-2"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label class="text-sm font-medium">
+            Estado
+          </label>
+
+          <select
+            id="estado"
+            class="mt-1 w-full border rounded-xl px-3 py-2"
+          >
+
+            <option>Backlog</option>
+            <option>Asignado a</option>
+            <option>En progreso</option>
+            <option>En revisión</option>
+            <option>Finalizado</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="flex justify-end gap-3 pt-3">
+
+          <button
+            type="button"
+            onclick="closeModal()"
+            class="px-4 py-2 rounded-xl border"
+          >
+            Cancelar
+          </button>
+
+
+          <button
+            type="submit"
+            class="bg-slate-900 text-white
+                   px-5 py-2 rounded-xl"
+          >
+            Guardar
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- JAVASCRIPT -->
+
+  <script src="app.js"></script>
+
+</body>
+
+</html>
