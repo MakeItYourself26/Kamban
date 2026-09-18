@@ -28,16 +28,16 @@
 
     .drag-over {
       border: 2px dashed #6366f1;
-      background: #eef2ff;
+      background-color: #eef2ff;
     }
   </style>
 </head>
 
 <body class="bg-gray-100 min-h-screen">
 
-  <!-- =========================
+  <!-- ==============================
        ENCABEZADO
-  ========================== -->
+  =============================== -->
   <header class="bg-white shadow-sm border-b">
     <div class="max-w-7xl mx-auto px-6 py-5">
 
@@ -49,7 +49,7 @@
           </h1>
 
           <p class="text-gray-500 mt-1">
-            Organización y seguimiento de tareas
+            Organización y seguimiento de tareas del equipo
           </p>
         </div>
 
@@ -68,9 +68,9 @@
   </header>
 
 
-  <!-- =========================
-       MENSAJES
-  ========================== -->
+  <!-- ==============================
+       MENSAJE DE ESTADO
+  =============================== -->
   <div
     id="message"
     class="hidden max-w-7xl mx-auto px-6 mt-5"
@@ -82,9 +82,9 @@
   </div>
 
 
-  <!-- =========================
+  <!-- ==============================
        TABLERO KANBAN
-  ========================== -->
+  =============================== -->
 
   <main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
 
@@ -104,7 +104,7 @@
 
           <span
             id="countBacklog"
-            class="bg-gray-300 px-2 py-1 rounded-full text-xs font-bold"
+            class="bg-gray-300 text-gray-700 px-2 py-1 rounded-full text-xs font-bold"
           >
             0
           </span>
@@ -120,7 +120,7 @@
       </section>
 
 
-      <!-- ASIGNADO -->
+      <!-- ASIGNADO A -->
       <section class="bg-blue-100 rounded-xl p-4">
 
         <div class="flex justify-between items-center mb-4">
@@ -232,9 +232,9 @@
   </main>
 
 
-  <!-- ==================================================
-       MODAL PARA AGREGAR / EDITAR TAREA
-  =================================================== -->
+  <!-- =================================================
+       MODAL AGREGAR / EDITAR TAREA
+  ================================================== -->
 
   <div
     id="taskModal"
@@ -245,10 +245,11 @@
       class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
     >
 
-      <!-- CABECERA -->
+      <!-- CABECERA DEL MODAL -->
       <div class="flex justify-between items-center p-6 border-b">
 
         <div>
+
           <h2
             id="modalTitle"
             class="text-2xl font-bold text-gray-800"
@@ -259,12 +260,13 @@
           <p class="text-sm text-gray-500 mt-1">
             Completa la información de la tarea
           </p>
+
         </div>
 
         <button
           id="closeModal"
           type="button"
-          class="text-gray-400 hover:text-gray-700 text-3xl"
+          class="text-gray-400 hover:text-gray-700 text-3xl leading-none"
         >
           &times;
         </button>
@@ -272,9 +274,9 @@
       </div>
 
 
-      <!-- ==================================================
+      <!-- ==============================
            FORMULARIO
-      =================================================== -->
+      =============================== -->
 
       <form
         id="taskForm"
@@ -288,7 +290,7 @@
         >
 
 
-        <!-- TÍTULO -->
+        <!-- NOMBRE -->
         <div>
 
           <label
@@ -303,7 +305,7 @@
             id="title"
             required
             placeholder="Ej: Diseñar la página principal"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
 
         </div>
@@ -322,8 +324,8 @@
           <textarea
             id="description"
             rows="4"
-            placeholder="Describe lo que se debe realizar..."
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            placeholder="Describe qué se debe realizar..."
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           ></textarea>
 
         </div>
@@ -342,7 +344,7 @@
           <select
             id="responsible"
             required
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
 
             <option value="">
@@ -385,7 +387,7 @@
             <input
               type="date"
               id="startDate"
-              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
 
           </div>
@@ -403,7 +405,7 @@
             <input
               type="date"
               id="endDate"
-              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
 
           </div>
@@ -425,7 +427,7 @@
             type="url"
             id="deliverable"
             placeholder="https://drive.google.com/..."
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
 
         </div>
@@ -443,7 +445,7 @@
 
           <select
             id="status"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
 
             <option value="Backlog">
@@ -477,7 +479,7 @@
           <button
             type="button"
             id="cancelButton"
-            class="px-5 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 font-semibold text-gray-700"
+            class="px-5 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold"
           >
             Cancelar
           </button>
@@ -499,9 +501,9 @@
   </div>
 
 
-  <!-- =========================
-       APP.JS
-  ========================== -->
+  <!-- ==============================
+       CONEXIÓN CON APP.JS
+  =============================== -->
 
   <script src="app.js"></script>
 
