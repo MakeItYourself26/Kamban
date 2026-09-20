@@ -1,511 +1,189 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Kanban - Proyecto LMS</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .kanban-column {
-      min-height: 450px;
-    }
-
-    .task-card {
-      cursor: grab;
-    }
-
-    .task-card:active {
-      cursor: grabbing;
-    }
-
-    .drag-over {
-      border: 2px dashed #6366f1;
-      background-color: #eef2ff;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero Kanban - LMS IA</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .kanban-column { min-height: 65vh; }
+    </style>
 </head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-<body class="bg-gray-100 min-h-screen">
+    <!-- Encabezado -->
+    <header class="bg-indigo-600 text-white shadow p-4 flex justify-between items-center">
+        <h1 class="text-lg font-bold">Kanban | Creación Web con IA (LMS)</h1>
+        <button onclick="openModal()" class="bg-white text-indigo-600 px-4 py-2 rounded-lg font-semibold text-sm shadow hover:bg-indigo-50 transition">+ Nueva Tarjeta</button>
+    </header>
 
-  <!-- ==============================
-       ENCABEZADO
-  =============================== -->
-  <header class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-6 py-5">
-
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-        <div>
-          <h1 class="text-3xl font-bold text-gray-800">
-            Kanban - Proyecto LMS
-          </h1>
-
-          <p class="text-gray-500 mt-1">
-            Organización y seguimiento de tareas del equipo
-          </p>
+    <!-- Tablero -->
+    <main class="flex-1 p-6 overflow-x-auto">
+        <div class="flex gap-6 min-w-[1100px]">
+            <!-- Columna 1 -->
+            <div class="flex-1 bg-slate-200/70 rounded-xl p-4 flex flex-col" data-status="Backlog">
+                <h2 class="font-semibold text-slate-700 mb-3 flex justify-between text-sm">Backlog <span class="bg-slate-300 px-2 py-0.5 rounded-full text-xs count-backlog">0</span></h2>
+                <div class="flex-1 flex flex-col gap-3 overflow-y-auto kanban-column" ondragover="allowDrop(event)" ondrop="drop(event, 'Backlog')"></div>
+            </div>
+            <!-- Columna 2 -->
+            <div class="flex-1 bg-slate-200/70 rounded-xl p-4 flex flex-col" data-status="Asignado a">
+                <h2 class="font-semibold text-slate-700 mb-3 flex justify-between text-sm">Asignado a <span class="bg-slate-300 px-2 py-0.5 rounded-full text-xs count-asignado">0</span></h2>
+                <div class="flex-1 flex flex-col gap-3 overflow-y-auto kanban-column" ondragover="allowDrop(event)" ondrop="drop(event, 'Asignado a')"></div>
+            </div>
+            <!-- Columna 3 -->
+            <div class="flex-1 bg-slate-200/70 rounded-xl p-4 flex flex-col" data-status="En progreso">
+                <h2 class="font-semibold text-slate-700 mb-3 flex justify-between text-sm">En progreso <span class="bg-slate-300 px-2 py-0.5 rounded-full text-xs count-progreso">0</span></h2>
+                <div class="flex-1 flex flex-col gap-3 overflow-y-auto kanban-column" ondragover="allowDrop(event)" ondrop="drop(event, 'En progreso')"></div>
+            </div>
+            <!-- Columna 4 -->
+            <div class="flex-1 bg-slate-200/70 rounded-xl p-4 flex flex-col" data-status="En revisión">
+                <h2 class="font-semibold text-slate-700 mb-3 flex justify-between text-sm">En revisión <span class="bg-slate-300 px-2 py-0.5 rounded-full text-xs count-revision">0</span></h2>
+                <div class="flex-1 flex flex-col gap-3 overflow-y-auto kanban-column" ondragover="allowDrop(event)" ondrop="drop(event, 'En revisión')"></div>
+            </div>
+            <!-- Columna 5 -->
+            <div class="flex-1 bg-slate-200/70 rounded-xl p-4 flex flex-col" data-status="Finalizado">
+                <h2 class="font-semibold text-slate-700 mb-3 flex justify-between text-sm">Finalizado <span class="bg-slate-300 px-2 py-0.5 rounded-full text-xs count-finalizado">0</span></h2>
+                <div class="flex-1 flex flex-col gap-3 overflow-y-auto kanban-column" ondragover="allowDrop(event)" ondrop="drop(event, 'Finalizado')"></div>
+            </div>
         </div>
+    </main>
 
-        <!-- BOTÓN AGREGAR TAREA -->
-        <button
-          id="addTaskButton"
-          type="button"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg shadow transition"
-        >
-          + Agregar tarea
-        </button>
-
-      </div>
-
-    </div>
-  </header>
-
-
-  <!-- ==============================
-       MENSAJE DE ESTADO
-  =============================== -->
-  <div
-    id="message"
-    class="hidden max-w-7xl mx-auto px-6 mt-5"
-  >
-    <div
-      id="messageContent"
-      class="rounded-lg px-4 py-3 font-medium"
-    ></div>
-  </div>
-
-
-  <!-- ==============================
-       TABLERO KANBAN
-  =============================== -->
-
-  <main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
-
-    <div
-      id="kanbanBoard"
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5"
-    >
-
-      <!-- BACKLOG -->
-      <section class="bg-gray-200 rounded-xl p-4">
-
-        <div class="flex justify-between items-center mb-4">
-
-          <h2 class="font-bold text-gray-800">
-            Backlog
-          </h2>
-
-          <span
-            id="countBacklog"
-            class="bg-gray-300 text-gray-700 px-2 py-1 rounded-full text-xs font-bold"
-          >
-            0
-          </span>
-
+    <!-- Ventana emergente (Modal) -->
+    <div id="taskModal" class="fixed inset-0 bg-black/40 hidden justify-center items-center p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="font-bold text-base mb-4">Crear Nueva Tarea</h3>
+            <form id="taskForm" onsubmit="submitTask(event)" class="flex flex-col gap-3 text-sm">
+                <input type="text" id="title" placeholder="Título de la actividad" required class="border p-2 rounded-lg outline-indigo-500">
+                <textarea id="description" placeholder="Descripción detallada" rows="2" class="border p-2 rounded-lg outline-indigo-500"></textarea>
+                <select id="assignee" class="border p-2 rounded-lg outline-indigo-500">
+                    <option value="Chelsea">Chelsea</option>
+                    <option value="Tutor IA">Tutor IA</option>
+                    <option value="Diseñador Web">Diseñador Web</option>
+                </select>
+                <div class="flex gap-2">
+                    <input type="date" id="startDate" class="border p-2 rounded-lg flex-1" required>
+                    <input type="date" id="endDate" class="border p-2 rounded-lg flex-1" required>
+                </div>
+                <input type="url" id="url" placeholder="URL del entregable (opcional)" class="border p-2 rounded-lg outline-indigo-500">
+                <div class="flex justify-end gap-2 mt-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-600">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Guardar Tarjeta</button>
+                </div>
+            </form>
         </div>
-
-        <div
-          id="backlog"
-          class="kanban-column space-y-3 rounded-lg p-1"
-          data-status="Backlog"
-        ></div>
-
-      </section>
-
-
-      <!-- ASIGNADO A -->
-      <section class="bg-blue-100 rounded-xl p-4">
-
-        <div class="flex justify-between items-center mb-4">
-
-          <h2 class="font-bold text-gray-800">
-            Asignado a
-          </h2>
-
-          <span
-            id="countAsignado"
-            class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-bold"
-          >
-            0
-          </span>
-
-        </div>
-
-        <div
-          id="asignado"
-          class="kanban-column space-y-3 rounded-lg p-1"
-          data-status="Asignado a"
-        ></div>
-
-      </section>
-
-
-      <!-- EN PROGRESO -->
-      <section class="bg-yellow-100 rounded-xl p-4">
-
-        <div class="flex justify-between items-center mb-4">
-
-          <h2 class="font-bold text-gray-800">
-            En progreso
-          </h2>
-
-          <span
-            id="countProgreso"
-            class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold"
-          >
-            0
-          </span>
-
-        </div>
-
-        <div
-          id="progreso"
-          class="kanban-column space-y-3 rounded-lg p-1"
-          data-status="En progreso"
-        ></div>
-
-      </section>
-
-
-      <!-- EN REVISIÓN -->
-      <section class="bg-purple-100 rounded-xl p-4">
-
-        <div class="flex justify-between items-center mb-4">
-
-          <h2 class="font-bold text-gray-800">
-            En revisión
-          </h2>
-
-          <span
-            id="countRevision"
-            class="bg-purple-200 text-purple-800 px-2 py-1 rounded-full text-xs font-bold"
-          >
-            0
-          </span>
-
-        </div>
-
-        <div
-          id="revision"
-          class="kanban-column space-y-3 rounded-lg p-1"
-          data-status="En revisión"
-        ></div>
-
-      </section>
-
-
-      <!-- FINALIZADO -->
-      <section class="bg-green-100 rounded-xl p-4">
-
-        <div class="flex justify-between items-center mb-4">
-
-          <h2 class="font-bold text-gray-800">
-            Finalizado
-          </h2>
-
-          <span
-            id="countFinalizado"
-            class="bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs font-bold"
-          >
-            0
-          </span>
-
-        </div>
-
-        <div
-          id="finalizado"
-          class="kanban-column space-y-3 rounded-lg p-1"
-          data-status="Finalizado"
-        ></div>
-
-      </section>
-
     </div>
 
-  </main>
+    <!-- Script de funcionamiento -->
+    <script>
+        // PEGA AQUÍ ABAJO LA URL QUE COPIASTE DE GOOGLE APPS SCRIPT
+        const API_URL = "https://script.google.com/macros/s/AKfycbzOXT_VWomQRIhqniyp0SfYdYDLYU_JvXuZmN9kA8KvDM-dQG_EbAOfVkOkOYSh8NH6qg/exec";
+
+        let tasks = [];
+
+        async function fetchTasks() {
+            try {
+                const response = await fetch(API_URL);
+                tasks = await response.json();
+                renderBoard();
+            } catch (error) {
+                console.error("Error al obtener tareas:", error);
+            }
+        }
+
+        function renderBoard() {
+            document.querySelectorAll('.kanban-column').forEach(col => col.innerHTML = '');
+            const counts = { 'Backlog': 0, 'Asignado a': 0, 'En progreso': 0, 'En revisión': 0, 'Finalizado': 0 };
+
+            tasks.forEach(task => {
+                const col = document.querySelector(`[data-status="${task.status}"] .kanban-column`);
+                if (col) {
+                    counts[task.status]++;
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab flex flex-col gap-2 text-xs";
+                    card.draggable = true;
+                    card.id = task.id;
+                    card.ondragstart = (e) => e.dataTransfer.setData('text/plain', task.id);
+                    
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start font-semibold text-slate-800">
+                            <span>${task.title}</span>
+                            <span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-normal">${task.assignee}</span>
+                        </div>
+                        <p class="text-slate-500">${task.description}</p>
+                        <div class="text-[10px] text-slate-400 flex justify-between border-t pt-1">
+                            <span>Inicio: ${task.startDate}</span><span>Fin: ${task.endDate}</span>
+                        </div>
+                        ${task.url ? `<a href="${task.url}" target="_blank" class="text-indigo-600 underline font-medium truncate">Ver entregable ↗</a>` : ''}
+                    `;
+                    col.appendChild(card);
+                }
+            });
+
+            for (let status in counts) {
+                let className = status.toLowerCase().replace(' ', '-').replace('á', 'a').replace('ó', 'o');
+                // Ajuste rápido para clases de conteo
+                if(status === 'Asignado a') className = 'asignado';
+                if(status === 'En progreso') className = 'progreso';
+                if(status === 'En revisión') className = 'revision';
+                if(status === 'Finalizado') className = 'finalizado';
+                
+                const badge = document.querySelector(`.count-${className}`);
+                if(badge) badge.innerText = counts[status];
+            }
+        }
+
+        function allowDrop(e) { e.preventDefault(); }
+
+        async function drop(e, newStatus) {
+            e.preventDefault();
+            const taskId = e.dataTransfer.getData('text/plain');
+            const task = tasks.find(t => t.id == taskId);
+            if (task && task.status !== newStatus) {
+                task.status = newStatus;
+                renderBoard();
+                await updateTaskInBackend(task);
+            }
+        }
+
+        async function updateTaskInBackend(task) {
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'updateStatus', id: task.id, status: task.status })
+            });
+            fetchTasks();
+        }
+
+        function openModal() { document.getElementById('taskModal').classList.remove('hidden'); document.getElementById('taskModal').classList.add('flex'); }
+        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); document.getElementById('taskModal').classList.remove('flex'); }
+
+        async function submitTask(e) {
+            e.preventDefault();
+            const newTask = {
+                id: Date.now().toString(),
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                assignee: document.getElementById('assignee').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                url: document.getElementById('url').value,
+                status: 'Backlog'
+            };
+
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'createTask', ...newTask })
+            });
+
+            closeModal();
+            document.getElementById('taskForm').reset();
+            fetchTasks();
+        }
 
-
-  <!-- =================================================
-       MODAL AGREGAR / EDITAR TAREA
-  ================================================== -->
-
-  <div
-    id="taskModal"
-    class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center p-4"
-  >
-
-    <div
-      class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
-    >
-
-      <!-- CABECERA DEL MODAL -->
-      <div class="flex justify-between items-center p-6 border-b">
-
-        <div>
-
-          <h2
-            id="modalTitle"
-            class="text-2xl font-bold text-gray-800"
-          >
-            Agregar tarea
-          </h2>
-
-          <p class="text-sm text-gray-500 mt-1">
-            Completa la información de la tarea
-          </p>
-
-        </div>
-
-        <button
-          id="closeModal"
-          type="button"
-          class="text-gray-400 hover:text-gray-700 text-3xl leading-none"
-        >
-          &times;
-        </button>
-
-      </div>
-
-
-      <!-- ==============================
-           FORMULARIO
-      =============================== -->
-
-      <form
-        id="taskForm"
-        class="p-6 space-y-5"
-      >
-
-        <!-- ID OCULTO -->
-        <input
-          type="hidden"
-          id="taskId"
-        >
-
-
-        <!-- NOMBRE -->
-        <div>
-
-          <label
-            for="title"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Nombre de la tarea *
-          </label>
-
-          <input
-            type="text"
-            id="title"
-            required
-            placeholder="Ej: Diseñar la página principal"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-
-        </div>
-
-
-        <!-- DESCRIPCIÓN -->
-        <div>
-
-          <label
-            for="description"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Descripción
-          </label>
-
-          <textarea
-            id="description"
-            rows="4"
-            placeholder="Describe qué se debe realizar..."
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          ></textarea>
-
-        </div>
-
-
-        <!-- RESPONSABLE -->
-        <div>
-
-          <label
-            for="responsible"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Responsable *
-          </label>
-
-          <select
-            id="responsible"
-            required
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-
-            <option value="">
-              Selecciona un responsable
-            </option>
-
-            <option value="Valentina">
-              Valentina
-            </option>
-
-            <option value="Daniel">
-              Daniel
-            </option>
-
-            <option value="Isabella">
-              Isabella
-            </option>
-
-            <option value="Breiner">
-              Breiner
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- FECHAS -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          <div>
-
-            <label
-              for="startDate"
-              class="block text-sm font-semibold text-gray-700 mb-2"
-            >
-              Fecha de inicio
-            </label>
-
-            <input
-              type="date"
-              id="startDate"
-              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-
-          </div>
-
-
-          <div>
-
-            <label
-              for="endDate"
-              class="block text-sm font-semibold text-gray-700 mb-2"
-            >
-              Fecha de finalización
-            </label>
-
-            <input
-              type="date"
-              id="endDate"
-              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-
-          </div>
-
-        </div>
-
-
-        <!-- URL -->
-        <div>
-
-          <label
-            for="deliverable"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            URL del entregable
-          </label>
-
-          <input
-            type="url"
-            id="deliverable"
-            placeholder="https://drive.google.com/..."
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-
-        </div>
-
-
-        <!-- ESTADO -->
-        <div>
-
-          <label
-            for="status"
-            class="block text-sm font-semibold text-gray-700 mb-2"
-          >
-            Estado
-          </label>
-
-          <select
-            id="status"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-
-            <option value="Backlog">
-              Backlog
-            </option>
-
-            <option value="Asignado a">
-              Asignado a
-            </option>
-
-            <option value="En progreso">
-              En progreso
-            </option>
-
-            <option value="En revisión">
-              En revisión
-            </option>
-
-            <option value="Finalizado">
-              Finalizado
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- BOTONES -->
-        <div class="flex justify-end gap-3 pt-5 border-t">
-
-          <button
-            type="button"
-            id="cancelButton"
-            class="px-5 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-semibold"
-          >
-            Cancelar
-          </button>
-
-          <button
-            type="submit"
-            id="submitTask"
-            class="px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
-          >
-            Agregar tarea
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </div>
-
-
-  <!-- ==============================
-       CONEXIÓN CON APP.JS
-  =============================== -->
-
-  <script src="app.js"></script>
-
+        fetchTasks();
+    </script>
 </body>
 </html>
