@@ -55,8 +55,9 @@
     <!-- Ventana emergente (Modal) -->
     <div id="taskModal" class="fixed inset-0 bg-black/40 hidden justify-center items-center p-4">
         <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
-            <h3 class="font-bold text-base mb-4">Crear Nueva Tarea</h3>
+            <h3 id="modalTitle" class="font-bold text-base mb-4">Crear Nueva Tarea</h3>
             <form id="taskForm" onsubmit="submitTask(event)" class="flex flex-col gap-3 text-sm">
+                <input type="hidden" id="taskId">
                 <input type="text" id="title" placeholder="Título de la actividad" required class="border p-2 rounded-lg outline-indigo-500">
                 <textarea id="description" placeholder="Descripción detallada" rows="2" class="border p-2 rounded-lg outline-indigo-500"></textarea>
                 <select id="assignee" class="border p-2 rounded-lg outline-indigo-500">
@@ -69,9 +70,13 @@
                     <input type="date" id="endDate" class="border p-2 rounded-lg flex-1" required>
                 </div>
                 <input type="url" id="url" placeholder="URL del entregable (opcional)" class="border p-2 rounded-lg outline-indigo-500">
-                <div class="flex justify-end gap-2 mt-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-600">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Guardar Tarjeta</button>
+                
+                <div class="flex justify-between items-center mt-3">
+                    <button type="button" id="btnDelete" onclick="deleteTaskLocally()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hidden">Eliminar Tarjeta</button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-600">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Guardar Tarjeta</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -103,11 +108,18 @@
                 if (col) {
                     counts[task.status]++;
                     const card = document.createElement('div');
-                    card.className = "bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab flex flex-col gap-2 text-xs";
+                    card.className = "bg-white p-3.5 rounded-lg shadow-sm border border-slate-200 cursor-grab flex flex-col gap-2 text-xs hover:border-indigo-400 transition";
                     card.draggable = true;
                     card.id = task.id;
                     card.ondragstart = (e) => e.dataTransfer.setData('text/plain', task.id);
                     
+                    // Al hacer click sobre la tarjeta, se abre para editarla
+                    card.onclick = (e) => {
+                        // Evitamos conflictos si arrastran la tarjeta
+                        if (e.defaultPrevented) return;
+                        openModal(task);
+                    };
+
                     card.innerHTML = `
                         <div class="flex justify-between items-start font-semibold text-slate-800">
                             <span>${task.title}</span>
@@ -117,7 +129,7 @@
                         <div class="text-[10px] text-slate-400 flex justify-between border-t pt-1">
                             <span>Inicio: ${task.startDate}</span><span>Fin: ${task.endDate}</span>
                         </div>
-                        ${task.url ? `<a href="${task.url}" target="_blank" class="text-indigo-600 underline font-medium truncate">Ver entregable ↗</a>` : ''}
+                        ${task.url ? `<a href="${task.url}" target="_blank" class="text-indigo-600 underline font-medium truncate" onclick="event.stopPropagation()">Ver entregable ↗</a>` : ''}
                     `;
                     col.appendChild(card);
                 }
@@ -125,7 +137,6 @@
 
             for (let status in counts) {
                 let className = status.toLowerCase().replace(' ', '-').replace('á', 'a').replace('ó', 'o');
-                // Ajuste rápido para clases de conteo
                 if(status === 'Asignado a') className = 'asignado';
                 if(status === 'En progreso') className = 'progreso';
                 if(status === 'En revisión') className = 'revision';
@@ -157,30 +168,91 @@
             fetchTasks();
         }
 
-        function openModal() { document.getElementById('taskModal').classList.remove('hidden'); document.getElementById('taskModal').classList.add('flex'); }
-        function closeModal() { document.getElementById('taskModal').classList.add('hidden'); document.getElementById('taskModal').classList.remove('flex'); }
+        function openModal(task = null) {
+            const modal = document.getElementById('taskModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const btnDelete = document.getElementById('btnDelete');
+            
+            document.getElementById('taskForm').reset();
+
+            if (task) {
+                // Modo Edición
+                modalTitle.innerText = "Editar Tarea";
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('title').value = task.title || '';
+                document.getElementById('description').value = task.description || '';
+                document.getElementById('assignee').value = task.assignee || 'Chelsea';
+                document.getElementById('startDate').value = task.startDate || '';
+                document.getElementById('endDate').value = task.endDate || '';
+                document.getElementById('url').value = task.url || '';
+                btnDelete.classList.remove('hidden'); // Muestra el botón de borrar localmente
+            } else {
+                // Modo Creación
+                modalTitle.innerText = "Crear Nueva Tarea";
+                document.getElementById('taskId').value = '';
+                btnDelete.classList.add('hidden'); // Oculta el botón de borrar
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() { 
+            document.getElementById('taskModal').classList.add('hidden'); 
+            document.getElementById('taskModal').classList.remove('flex'); 
+        }
+
+        function deleteTaskLocally() {
+            const taskId = document.getElementById('taskId').value;
+            if (!taskId) return;
+
+            // Filtramos el arreglo local eliminando la tarea
+            tasks = tasks.filter(t => t.id != taskId);
+            
+            // Actualizamos el tablero visualmente sin tocar Google Sheets
+            renderBoard();
+            closeModal();
+        }
 
         async function submitTask(e) {
             e.preventDefault();
-            const newTask = {
-                id: Date.now().toString(),
-                title: document.getElementById('title').value,
-                description: document.getElementById('description').value,
-                assignee: document.getElementById('assignee').value,
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value,
-                url: document.getElementById('url').value,
-                status: 'Backlog'
-            };
+            const taskId = document.getElementById('taskId').value;
 
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'createTask', ...newTask })
-            });
+            if (taskId) {
+                // Actualizar tarjeta existente de forma local en memoria
+                const task = tasks.find(t => t.id == taskId);
+                if (task) {
+                    task.title = document.getElementById('title').value;
+                    task.description = document.getElementById('description').value;
+                    task.assignee = document.getElementById('assignee').value;
+                    task.startDate = document.getElementById('startDate').value;
+                    task.endDate = document.getElementById('endDate').value;
+                    task.url = document.getElementById('url').value;
+                }
+                renderBoard();
+                closeModal();
+                // Nota: Si deseas que la edición general también se guarde en backend, puedes añadir otra acción o dejarlo localmente como pediste.
+            } else {
+                // Crear nueva tarjeta
+                const newTask = {
+                    id: Date.now().toString(),
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value,
+                    assignee: document.getElementById('assignee').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    url: document.getElementById('url').value,
+                    status: 'Backlog'
+                };
 
-            closeModal();
-            document.getElementById('taskForm').reset();
-            fetchTasks();
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'createTask', ...newTask })
+                });
+
+                closeModal();
+                fetchTasks();
+            }
         }
 
         fetchTasks();
