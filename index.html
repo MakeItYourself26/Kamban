@@ -217,6 +217,12 @@
             e.preventDefault();
             const taskId = document.getElementById('taskId').value;
 
+            let currentStatus = 'Backlog';
+            if (taskId) {
+                const existingTask = tasks.find(t => t.id == taskId);
+                if (existingTask) currentStatus = existingTask.status;
+            }
+
             const taskData = {
                 id: taskId || Date.now().toString(),
                 title: document.getElementById('title').value,
@@ -225,16 +231,10 @@
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
                 url: document.getElementById('url').value,
-                status: 'Backlog' // Si es nueva se va a Backlog, si se edita conservará su estado abajo en Apps Script //
+                status: currentStatus
             };
 
             const actionType = taskId ? 'updateTask' : 'createTask';
-
-            // Si estamos editando, mantenemos el estado que ya tenía la tarea
-            if (taskId) {
-                const existingTask = tasks.find(t => t.id == taskId);
-                if (existingTask) taskData.status = existingTask.status;
-            }
 
             await fetch(API_URL, {
                 method: 'POST',
