@@ -72,10 +72,10 @@
                 <input type="url" id="url" placeholder="URL del entregable (opcional)" class="border p-2 rounded-lg outline-indigo-500">
                 
                 <div class="flex justify-between items-center mt-3">
-                    <button type="button" id="btnDelete" onclick="deleteTaskLocally()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hidden">Eliminar Tarjeta</button>
+                    <button type="button" id="btnDelete" onclick="deleteTaskBackend()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-medium hidden hover:bg-red-200 transition">Eliminar Tarjeta</button>
                     <div class="flex gap-2 ml-auto">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-600">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">Guardar Tarjeta</button>
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-600 hover:bg-slate-200 transition">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition">Guardar Tarjeta</button>
                     </div>
                 </div>
             </form>
@@ -84,7 +84,6 @@
 
     <!-- Script de funcionamiento -->
     <script>
-        // PEGA AQUÍ ABAJO LA URL QUE COPIASTE DE GOOGLE APPS SCRIPT
         const API_URL = "https://script.google.com/macros/s/AKfycbzOXT_VWomQRIhqniyp0SfYdYDLYU_JvXuZmN9kA8KvDM-dQG_EbAOfVkOkOYSh8NH6qg/exec";
 
         let tasks = [];
@@ -113,9 +112,7 @@
                     card.id = task.id;
                     card.ondragstart = (e) => e.dataTransfer.setData('text/plain', task.id);
                     
-                    // Al hacer click sobre la tarjeta, se abre para editarla
                     card.onclick = (e) => {
-                        // Evitamos conflictos si arrastran la tarjeta
                         if (e.defaultPrevented) return;
                         openModal(task);
                     };
@@ -176,7 +173,6 @@
             document.getElementById('taskForm').reset();
 
             if (task) {
-                // Modo Edición
                 modalTitle.innerText = "Editar Tarea";
                 document.getElementById('taskId').value = task.id;
                 document.getElementById('title').value = task.title || '';
@@ -185,12 +181,11 @@
                 document.getElementById('startDate').value = task.startDate || '';
                 document.getElementById('endDate').value = task.endDate || '';
                 document.getElementById('url').value = task.url || '';
-                btnDelete.classList.remove('hidden'); // Muestra el botón de borrar localmente
+                btnDelete.classList.remove('hidden');
             } else {
-                // Modo Creación
                 modalTitle.innerText = "Crear Nueva Tarea";
                 document.getElementById('taskId').value = '';
-                btnDelete.classList.add('hidden'); // Oculta el botón de borrar
+                btnDelete.classList.add('hidden');
             }
 
             modal.classList.remove('hidden');
@@ -202,57 +197,52 @@
             document.getElementById('taskModal').classList.remove('flex'); 
         }
 
-        function deleteTaskLocally() {
+        async function deleteTaskBackend() {
             const taskId = document.getElementById('taskId').value;
             if (!taskId) return;
 
-            // Filtramos el arreglo local eliminando la tarea
-            tasks = tasks.filter(t => t.id != taskId);
-            
-            // Actualizamos el tablero visualmente sin tocar Google Sheets
-            renderBoard();
+            if (!confirm("¿Estás segura de eliminar esta tarjeta?")) return;
+
             closeModal();
+
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'deleteTask', id: taskId })
+            });
+
+            fetchTasks();
         }
 
         async function submitTask(e) {
             e.preventDefault();
             const taskId = document.getElementById('taskId').value;
 
+            const taskData = {
+                id: taskId || Date.now().toString(),
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                assignee: document.getElementById('assignee').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                url: document.getElementById('url').value,
+                status: 'Backlog' // Si es nueva se va a Backlog, si se edita conservará su estado abajo en Apps Script //
+            };
+
+            const actionType = taskId ? 'updateTask' : 'createTask';
+
+            // Si estamos editando, mantenemos el estado que ya tenía la tarea
             if (taskId) {
-                // Actualizar tarjeta existente de forma local en memoria
-                const task = tasks.find(t => t.id == taskId);
-                if (task) {
-                    task.title = document.getElementById('title').value;
-                    task.description = document.getElementById('description').value;
-                    task.assignee = document.getElementById('assignee').value;
-                    task.startDate = document.getElementById('startDate').value;
-                    task.endDate = document.getElementById('endDate').value;
-                    task.url = document.getElementById('url').value;
-                }
-                renderBoard();
-                closeModal();
-                // Nota: Si deseas que la edición general también se guarde en backend, puedes añadir otra acción o dejarlo localmente como pediste.
-            } else {
-                // Crear nueva tarjeta
-                const newTask = {
-                    id: Date.now().toString(),
-                    title: document.getElementById('title').value,
-                    description: document.getElementById('description').value,
-                    assignee: document.getElementById('assignee').value,
-                    startDate: document.getElementById('startDate').value,
-                    endDate: document.getElementById('endDate').value,
-                    url: document.getElementById('url').value,
-                    status: 'Backlog'
-                };
-
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'createTask', ...newTask })
-                });
-
-                closeModal();
-                fetchTasks();
+                const existingTask = tasks.find(t => t.id == taskId);
+                if (existingTask) taskData.status = existingTask.status;
             }
+
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: actionType, ...taskData })
+            });
+
+            closeModal();
+            fetchTasks();
         }
 
         fetchTasks();
